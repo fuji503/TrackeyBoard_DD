@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { SCREENS, type ScreenId } from '../hooks/useHashScreen'
 
-export const APP_TITLE = 'TrackeyBoardデジタルデモンストレータ v0.1'
+// 表示は major.minor のみ（例: 0.2.0 → v0.2）
+const APP_VERSION = __APP_VERSION__.split('.').slice(0, 2).join('.')
+const APP_TITLE = `TrackeyBoardデジタルデモンストレータ v${APP_VERSION}`
 
 interface Props {
   screen: ScreenId
