@@ -88,6 +88,14 @@ export function parseKeymap(data: unknown): Keymap {
   const km = data as Keymap
   if (km.format !== KEYMAP_FORMAT) fail(`format が "${KEYMAP_FORMAT}" ではありません`)
   if (km.version !== 1) fail(`未対応の version です: ${km.version}`)
+  if (typeof km.name !== 'string') fail('name がありません')
+  const gesture = km.settings?.gesture
+  if (gesture !== undefined) {
+    if (typeof gesture !== 'object' || gesture === null) fail('settings.gesture がオブジェクトではありません')
+    for (const [key, v] of Object.entries(gesture)) {
+      if (typeof v !== 'number' || !Number.isFinite(v)) fail(`settings.gesture.${key} が数値ではありません`)
+    }
+  }
   if (!Array.isArray(km.layout?.keys)) fail('layout.keys がありません')
   km.layout.keys.forEach((k, i) => {
     if (![k.x, k.y, k.w, k.h].every((v) => typeof v === 'number' && Number.isFinite(v))) {

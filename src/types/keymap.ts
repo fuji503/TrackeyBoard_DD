@@ -1,4 +1,4 @@
-import type { Direction } from '../features/gesture/types'
+import type { Direction, GestureConfig } from '../features/gesture/types'
 
 /**
  * TrackeyBoard キーマップ（JSON でエクスポート/インポートする形式）。
@@ -14,8 +14,14 @@ export interface Keymap {
   format: typeof KEYMAP_FORMAT
   version: 1
   name: string
+  /** シミュレータの設定（エクスポート時に同梱し、インポートで復元する） */
+  settings?: KeymapSettings
   layout: PhysicalLayout
   layers: Layer[]
+}
+
+export interface KeymapSettings {
+  gesture?: Partial<GestureConfig>
 }
 
 export const KEYMAP_FORMAT = 'trackeyboard-keymap'

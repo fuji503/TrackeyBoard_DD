@@ -4,8 +4,7 @@ import HistoryLog, { type LogEntry } from '../components/HistoryLog'
 import Keyboard, { KEYBOARD_BORDER_PX } from '../components/Keyboard'
 import KeyboardSizeSettings from '../components/KeyboardSizeSettings'
 import TextDisplay from '../components/TextDisplay'
-import { DEFAULT_KEYMAP } from '../data/keymaps'
-import { DEFAULT_GESTURE_CONFIG, type GestureEvent } from '../features/gesture/types'
+import type { GestureEvent } from '../features/gesture/types'
 import { DEFAULT_KEYBOARD_SIZE, resolvePitchPx } from '../features/keyboardSize'
 import {
   INITIAL_ENGINE_STATE,
@@ -17,6 +16,7 @@ import {
 import { buildKeyViews, layoutBounds } from '../features/keymap/view'
 import { EMPTY_BUFFER, applyEdit } from '../features/text/textBuffer'
 import { useLocalStorage } from '../hooks/useLocalStorage'
+import { useAppState } from '../state/appState'
 import { OS_LABELS, type OsId } from '../types/keymap'
 
 const MAX_LOG = 200
@@ -41,11 +41,10 @@ function useElementWidth() {
 }
 
 export default function SimulatorScreen() {
-  const keymap = DEFAULT_KEYMAP
+  const { keymap, gesture: config, setGesture: setConfig } = useAppState()
   const [buffer, setBuffer] = useState(EMPTY_BUFFER)
   const [showWhitespace, setShowWhitespace] = useState(false)
   const [log, setLog] = useState<LogEntry[]>([])
-  const [config, setConfig] = useLocalStorage('tbdd.gestureConfig', DEFAULT_GESTURE_CONFIG)
   const [size, setSize] = useLocalStorage('tbdd.keyboardSize', DEFAULT_KEYBOARD_SIZE)
   const [keyboardAreaRef, keyboardAreaWidth] = useElementWidth()
   // ジェスチャーは連続して届くので、最新状態は ref で持ち、表示用に state へ写す

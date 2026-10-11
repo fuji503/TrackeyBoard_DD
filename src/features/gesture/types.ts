@@ -55,3 +55,25 @@ export const DEFAULT_GESTURE_CONFIG: GestureConfig = {
   holdDelay: 400,
   repeatInterval: 80,
 }
+
+/** 各設定値の範囲と刻み（設定コンソールとインポート時の補正で共用） */
+export const GESTURE_RANGES: Record<keyof GestureConfig, { min: number; max: number; step: number }> = {
+  flickThreshold: { min: 0.1, max: 0.8, step: 0.05 },
+  glideStep: { min: 0.1, max: 1, step: 0.05 },
+  stopTolerance: { min: 0.01, max: 0.5, step: 0.01 },
+  holdDelay: { min: 150, max: 1000, step: 10 },
+  repeatInterval: { min: 30, max: 300, step: 5 },
+}
+
+/** 不完全・範囲外の設定値を既定値と範囲で補う */
+export function normalizeGestureConfig(partial: Partial<Record<keyof GestureConfig, unknown>> = {}): GestureConfig {
+  const result = { ...DEFAULT_GESTURE_CONFIG }
+  for (const key of Object.keys(GESTURE_RANGES) as (keyof GestureConfig)[]) {
+    const v = partial[key]
+    if (typeof v === 'number' && Number.isFinite(v)) {
+      const { min, max } = GESTURE_RANGES[key]
+      result[key] = Math.min(max, Math.max(min, v))
+    }
+  }
+  return result
+}

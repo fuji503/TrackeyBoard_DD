@@ -5,6 +5,7 @@ import ExportImportScreen from './screens/ExportImportScreen'
 import KeyboardEditorScreen from './screens/KeyboardEditorScreen'
 import SimulatorScreen from './screens/SimulatorScreen'
 import TrackpointScreen from './screens/TrackpointScreen'
+import AppStateProvider from './state/AppStateProvider'
 
 const SCREEN_COMPONENTS: Record<ScreenId, ComponentType> = {
   simulator: SimulatorScreen,
@@ -18,11 +19,13 @@ export default function App() {
   const Screen = SCREEN_COMPONENTS[screen]
 
   return (
-    <div className="flex h-dvh flex-col bg-slate-50 text-slate-900">
-      <AppHeader screen={screen} onSelect={setScreen} />
-      <main className="min-h-0 flex-1 overflow-auto">
-        <Screen />
-      </main>
-    </div>
+    <AppStateProvider>
+      <div className="flex h-dvh flex-col bg-slate-50 text-slate-900">
+        <AppHeader screen={screen} onSelect={setScreen} />
+        <main className="min-h-0 flex-1 overflow-auto">
+          <Screen />
+        </main>
+      </div>
+    </AppStateProvider>
   )
 }
