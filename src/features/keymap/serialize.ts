@@ -23,7 +23,7 @@ export function serializeKeymap(km: Keymap): string {
     `  "version": ${one(km.version)}`,
     `  "name": ${one(km.name)}`,
     ...(km.settings ? [`  "settings": ${one(km.settings)}`] : []),
-    `  "layout": {\n    "keys": ${array(km.layout.keys, '      ')}\n  }`,
+    `  "layout": {\n    "keys": ${array(km.layout.keys, '      ')}${km.layout.vtp ? `,\n    "vtp": ${one(km.layout.vtp)}` : ''}\n  }`,
     `  "layers": [\n${layers}\n  ]`,
   ]
   return `{\n${lines.join(',\n')}\n}\n`

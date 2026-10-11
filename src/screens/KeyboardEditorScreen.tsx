@@ -9,7 +9,7 @@ import { findOverlaps, setBinding, setLegend } from '../features/keymap/edit'
 import { buildLayerKeyViews, layoutBounds } from '../features/keymap/view'
 import { useElementWidth } from '../hooks/useElementWidth'
 import { useAppState } from '../state/appState'
-import { OS_LABELS, type Keymap, type Layer } from '../types/keymap'
+import { MODE_LABELS, OS_LABELS, type Keymap, type Layer } from '../types/keymap'
 
 const MAX_HISTORY = 100
 const MAX_PITCH = 64
@@ -23,6 +23,8 @@ function layerDescription(layer: Layer): string {
       return layer.activation.os.map((os) => OS_LABELS[os]).join(' / ')
     case 'os_select':
       return 'OS切替待機中'
+    case 'mode':
+      return `${MODE_LABELS[layer.activation.mode]}モード`
   }
 }
 
@@ -123,6 +125,7 @@ export default function KeyboardEditorScreen() {
             selected={selectedIndex}
             selectedDir={dir}
             overlapping={overlapping}
+            vtp={keymap.layout.vtp}
             onSelect={setSelected}
           />
           <p className="mt-1 text-xs text-slate-400">

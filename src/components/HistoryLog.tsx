@@ -18,11 +18,12 @@ const ACTION_STYLE: Record<HidLogItem['action'], string> = {
   hold: 'bg-amber-100 text-amber-800',
   release: 'bg-slate-100 text-slate-600',
   mode: 'bg-violet-100 text-violet-800',
+  mouse: 'bg-rose-100 text-rose-800',
 }
 
 function actionLabel(e: LogEntry): string {
   if (e.action === 'tap' && e.direction !== 'center') return `flick${DIR_MARK[e.direction]}`
-  if (e.action === 'mode') return 'mode'
+  if (e.action === 'mode' || e.action === 'mouse') return e.action
   return `${e.action}${DIR_MARK[e.direction]}`
 }
 

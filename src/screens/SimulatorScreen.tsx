@@ -2,8 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import GestureSettings from '../components/GestureSettings'
 import HistoryLog, { type LogEntry } from '../components/HistoryLog'
 import Keyboard, { KEYBOARD_BORDER_PX } from '../components/Keyboard'
+import ConsoleSection from '../components/ConsoleSection'
 import KeyboardSizeSettings from '../components/KeyboardSizeSettings'
-import TextDisplay from '../components/TextDisplay'
+import { TrackpadSettings, TrackpointSettings } from '../components/PointerSettings'
+import TextDisplay, { type Ripple } from '../components/TextDisplay'
 import type { GestureEvent } from '../features/gesture/types'
 import { DEFAULT_KEYBOARD_SIZE, resolvePitchPx } from '../features/keyboardSize'
 import {
@@ -11,23 +13,33 @@ import {
   OS_SELECT_TIMEOUT_MS,
   cancelOsSelect,
   handleGesture as runEngine,
+  setMode,
   type EngineResult,
+  type HidLogItem,
 } from '../features/keymap/engine'
 import { buildKeyViews, layoutBounds } from '../features/keymap/view'
+import { DEFAULT_POINTER_CONFIG } from '../features/pointer/config'
+import { MouseLogAggregator } from '../features/pointer/mouseLog'
+import type { PointerOutput } from '../features/pointer/output'
 import { EMPTY_BUFFER, applyEdit } from '../features/text/textBuffer'
 import { useElementWidth } from '../hooks/useElementWidth'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 import { useAppState } from '../state/appState'
-import { OS_LABELS, type OsId } from '../types/keymap'
+import { MODE_LABELS, OS_LABELS, type InputMode, type OsId } from '../types/keymap'
+import { caretOffsetAt } from '../utils/textHitTest'
 
 const MAX_LOG = 200
+/** ホイール1段あたりのスクロール量 (px) */
+const WHEEL_PX = 20
+const RIPPLE_MS = 500
+const INITIAL_CURSOR = { x: 40, y: 40 }
 
 function formatTime(d: Date): string {
   return `${d.toLocaleTimeString('ja-JP', { hour12: false })}.${String(d.getMilliseconds()).padStart(3, '0')}`
 }
 
 export default function SimulatorScreen() {
-  const { keymap, gesture: config, setGesture: setConfig } = useAppState()
+  const { keymap, gesture: config, setGesture: setConfig, pointer, setPointer } = useAppState()
   const [buffer, setBuffer] = useState(EMPTY_BUFFER)
   const [showWhitespace, setShowWhitespace] = useState(false)
   const [log, setLog] = useState<LogEntry[]>([])
@@ -37,18 +49,21 @@ export default function SimulatorScreen() {
   const engineRef = useRef(INITIAL_ENGINE_STATE)
   const [engine, setEngine] = useState(INITIAL_ENGINE_STATE)
   const nextId = useRef(0)
+  // 仮想マウスカーソル（テキスト欄の左上からの px）
+  const textRef = useRef<HTMLDivElement>(null)
+  const cursorRef = useRef(INITIAL_CURSOR)
+  const [cursor, setCursor] = useState(INITIAL_CURSOR)
+  const [ripples, setRipples] = useState<Ripple[]>([])
+  const mouseLog = useRef(new MouseLogAggregator())
 
   const views = useMemo(() => buildKeyViews(keymap), [keymap])
   const pitchPx = resolvePitchPx(size, keyboardAreaWidth - KEYBOARD_BORDER_PX, layoutBounds(keymap).cols)
 
-  const apply = useCallback(
-    (result: EngineResult, keyIndex: number | null, event: GestureEvent | null) => {
-      engineRef.current = result.state
-      setEngine(result.state)
-      if (result.edits.length > 0) setBuffer((b) => result.edits.reduce(applyEdit, b))
-      if (result.logs.length === 0) return
+  const appendLogs = useCallback(
+    (logs: HidLogItem[], keyIndex: number | null, event: GestureEvent | null) => {
+      if (logs.length === 0) return
       const time = formatTime(new Date())
-      const entries: LogEntry[] = result.logs.map((item) => ({
+      const entries: LogEntry[] = logs.map((item) => ({
         ...item,
         id: nextId.current++,
         time,
@@ -58,6 +73,77 @@ export default function SimulatorScreen() {
       setLog((l) => [...l, ...entries].slice(-MAX_LOG))
     },
     [views],
+  )
+
+  const apply = useCallback(
+    (result: EngineResult, keyIndex: number | null, event: GestureEvent | null) => {
+      engineRef.current = result.state
+      setEngine(result.state)
+      if (result.edits.length > 0) setBuffer((b) => result.edits.reduce(applyEdit, b))
+      appendLogs(result.logs, keyIndex, event)
+    },
+    [appendLogs],
+  )
+
+  const changeMode = useCallback(
+    (mode: InputMode) => {
+      // ポインタ操作に入るときは、積算中の移動を区切っておく
+      appendLogs(mouseLog.current.flush(), null, null)
+      apply(setMode(engineRef.current, mode), null, null)
+    },
+    [apply, appendLogs],
+  )
+
+  /** 仮想カーソル位置で左クリックしたとき、文字カーソルをその位置へ移す */
+  const clickAtCursor = useCallback((button: Ripple['button']) => {
+    const el = textRef.current
+    if (!el) return
+    const { x, y } = cursorRef.current
+    const id = nextId.current++
+    setRipples((r) => [...r, { id, x, y, button }])
+    setTimeout(() => setRipples((r) => r.filter((p) => p.id !== id)), RIPPLE_MS)
+    if (button !== 'left') return
+    const rect = el.getBoundingClientRect()
+    setBuffer((b) => ({ ...b, caret: caretOffsetAt(el, rect.left + x, rect.top + y, b.text.length) }))
+  }, [])
+
+  const handlePointer = useCallback(
+    (out: PointerOutput) => {
+      appendLogs(mouseLog.current.add(out), null, null)
+      const el = textRef.current
+      switch (out.type) {
+        case 'move': {
+          const w = el?.clientWidth ?? 0
+          const h = el?.clientHeight ?? 0
+          const c = cursorRef.current
+          cursorRef.current = {
+            x: Math.min(Math.max(0, c.x + out.dx), Math.max(0, w - 1)),
+            y: Math.min(Math.max(0, c.y + out.dy), Math.max(0, h - 1)),
+          }
+          setCursor(cursorRef.current)
+          break
+        }
+        case 'scroll':
+          if (el) {
+            el.scrollTop += out.dy * WHEEL_PX
+            el.scrollLeft += out.dx * WHEEL_PX
+          }
+          break
+        case 'button':
+          if (out.pressed) clickAtCursor(out.button)
+          break
+        case 'click':
+          clickAtCursor(out.button)
+          break
+        case 'exitTrackpad':
+          changeMode('keyboard')
+          break
+        case 'trackpoint':
+          changeMode(out.active ? 'trackpoint' : 'keyboard')
+          break
+      }
+    },
+    [appendLogs, changeMode, clickAtCursor],
   )
 
   const handleGesture = useCallback(
@@ -93,7 +179,13 @@ export default function SimulatorScreen() {
             </>
           }
         >
-          <TextDisplay buffer={buffer} showWhitespace={showWhitespace} />
+          <TextDisplay
+            buffer={buffer}
+            showWhitespace={showWhitespace}
+            scrollRef={textRef}
+            cursor={engine.mode === 'keyboard' ? null : cursor}
+            ripples={ripples}
+          />
         </Panel>
 
         <Panel title="HIDキーコード履歴" action={<ClearButton onClick={() => setLog([])} />}>
@@ -101,10 +193,21 @@ export default function SimulatorScreen() {
         </Panel>
 
         <Panel title="設定コンソール">
-          <div className="flex h-full flex-col gap-3 overflow-y-auto p-2 text-xs">
+          <div className="flex h-full flex-col gap-2 overflow-y-auto p-2 text-xs">
             <KeyboardSizeSettings size={size} pitchPx={pitchPx} onChange={setSize} />
-            <hr className="border-slate-200" />
             <GestureSettings config={config} onChange={setConfig} />
+            <ConsoleSection
+              title="トラックパッド"
+              onReset={() => setPointer({ ...pointer, ...pick(DEFAULT_POINTER_CONFIG, TRACKPAD_KEYS) })}
+            >
+              <TrackpadSettings config={pointer} onChange={setPointer} />
+            </ConsoleSection>
+            <ConsoleSection
+              title="トラックポイント (VTP)"
+              onReset={() => setPointer({ ...pointer, ...pick(DEFAULT_POINTER_CONFIG, TRACKPOINT_KEYS) })}
+            >
+              <TrackpointSettings config={pointer} onChange={setPointer} />
+            </ConsoleSection>
           </div>
         </Panel>
       </div>
@@ -112,8 +215,16 @@ export default function SimulatorScreen() {
       {/* キーボードが画面より大きい場合は横スクロールで見られるようにする */}
       <div ref={keyboardAreaRef} className="w-full overflow-x-auto">
         <div className="mx-auto flex w-fit flex-col gap-1">
-          <StatusBar os={engine.os} osSelect={engine.osSelect} />
-          <Keyboard keymap={keymap} config={config} pitchPx={pitchPx} onGesture={handleGesture} />
+          <StatusBar os={engine.os} osSelect={engine.osSelect} mode={engine.mode} />
+          <Keyboard
+            keymap={keymap}
+            config={config}
+            pointer={pointer}
+            mode={engine.mode}
+            pitchPx={pitchPx}
+            onGesture={handleGesture}
+            onPointer={handlePointer}
+          />
         </div>
       </div>
     </div>
@@ -140,11 +251,32 @@ function ClearButton({ onClick }: { onClick: () => void }) {
   )
 }
 
-/** 実機の LED2 に相当する状態表示（緑: Win/Linux/Android, 橙: Mac/iOS, 点滅: OS切替待機中） */
-function StatusBar({ os, osSelect }: { os: OsId; osSelect: boolean }) {
+const TRACKPAD_KEYS = ['padSpeed', 'padAccel', 'scrollStep', 'naturalScroll', 'tapMaxMs', 'tapSlopMm'] as const
+const TRACKPOINT_KEYS = [
+  'vtpRadiusMm', 'vtpHoldMs', 'vtpSlopMm', 'vtpTapAction', 'vtpMoveAction',
+  'stickDeadzoneMm', 'stickRangeMm', 'stickMaxSpeed', 'stickCurve', 'stickScrollSpeed',
+] as const
+
+function pick<T extends object, K extends keyof T>(obj: T, keys: readonly K[]): Pick<T, K> {
+  return Object.fromEntries(keys.map((k) => [k, obj[k]])) as Pick<T, K>
+}
+
+/** 実機の LED1（モード）に相当する色。BM 要件定義: 緑=キーボード, 橙=トラックパッド。トラックポイントは未定義のため青 */
+const MODE_LED: Record<InputMode, string> = {
+  keyboard: 'bg-green-500',
+  trackpad: 'bg-orange-400',
+  trackpoint: 'bg-blue-500',
+}
+
+/** 実機の LED1（モード）・LED2（OS。緑: Win/Linux/Android, 橙: Mac/iOS, 点滅: OS切替待機中）に相当する状態表示 */
+function StatusBar({ os, osSelect, mode }: { os: OsId; osSelect: boolean; mode: InputMode }) {
   const apple = os === 'mac' || os === 'ios'
   return (
     <div className="flex items-center gap-3 text-xs text-slate-600">
+      <span className="flex items-center gap-1">
+        <span className={`h-2.5 w-2.5 rounded-full ${MODE_LED[mode]}`} />
+        モード: <b>{MODE_LABELS[mode]}</b>
+      </span>
       <span className="flex items-center gap-1">
         <span
           className={`h-2.5 w-2.5 rounded-full ${apple ? 'bg-orange-400' : 'bg-green-500'} ${osSelect ? 'animate-[caret-blink_0.5s_step-end_infinite]' : ''}`}

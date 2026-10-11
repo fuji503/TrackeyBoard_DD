@@ -12,11 +12,13 @@ interface Props {
   selectedDir: Direction
   /** 重なっているキー（赤く表示） */
   overlapping: Set<number>
+  /** VTP の位置（単位: キーピッチ） */
+  vtp?: { x: number; y: number }
   onSelect: (index: number) => void
 }
 
 /** エディタ用キーボード。タップでキーを選択する（入力はしない） */
-export default function EditorKeyboard({ views, cols, rows, pitchPx, selected, selectedDir, overlapping, onSelect }: Props) {
+export default function EditorKeyboard({ views, cols, rows, pitchPx, selected, selectedDir, overlapping, vtp, onSelect }: Props) {
   return (
     <div
       className="relative box-content shrink-0 border-t-2 border-l-2 border-slate-400 select-none"
@@ -37,6 +39,13 @@ export default function EditorKeyboard({ views, cols, rows, pitchPx, selected, s
           }}
         />
       ))}
+      {vtp && (
+        <div
+          className="pointer-events-none absolute z-20 rounded-full bg-red-500 ring-2 ring-white"
+          style={{ left: vtp.x * pitchPx - pitchPx * 0.08, top: vtp.y * pitchPx - pitchPx * 0.08, width: pitchPx * 0.16, height: pitchPx * 0.16 }}
+          title="バーチャルトラックポイント"
+        />
+      )}
     </div>
   )
 }

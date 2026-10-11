@@ -8,7 +8,10 @@ import {
   removeKeys,
   removeLastColumn,
   removeLastRow,
+  setVtp,
   updateKey,
+  vtpPointOf,
+  type VtpAnchor,
 } from '../../features/keymap/edit'
 import { layoutBounds } from '../../features/keymap/view'
 import type { Keymap, PhysicalKey } from '../../types/keymap'
@@ -34,6 +37,15 @@ const FIELDS: { key: keyof Pick<PhysicalKey, 'x' | 'y' | 'w' | 'h'>; label: stri
   { key: 'w', label: '幅', min: UNIT },
   { key: 'h', label: '高さ', min: UNIT },
 ]
+
+const ANCHOR_GRID: (VtpAnchor | null)[] = ['upLeft', 'up', 'upRight', 'left', null, 'right', 'downLeft', 'down', 'downRight']
+const ANCHOR_LABELS: Record<VtpAnchor, string> = {
+  upLeft: '左上', up: '上', upRight: '右上', left: '左', right: '右', downLeft: '左下', down: '下', downRight: '右下',
+}
+
+function sameAnchor(a: { x: number; y: number } | undefined, b: { x: number; y: number }): boolean {
+  return !!a && Math.abs(a.x - b.x) < 1e-6 && Math.abs(a.y - b.y) < 1e-6
+}
 
 /** キー配列（物理レイアウト）の編集 */
 export default function LayoutEditor({ keymap, selected, overlaps, onChange }: Props) {
@@ -105,6 +117,49 @@ export default function LayoutEditor({ keymap, selected, overlaps, onChange }: P
             重なっているキーがあります（赤く表示）。位置や大きさを調整してください。
           </p>
         )}
+      </section>
+
+      <section className="flex flex-col gap-2">
+        <h3 className="text-xs font-bold text-slate-600">バーチャルトラックポイント (VTP) の位置</h3>
+        <p className="text-xs text-slate-500">
+          {keymap.layout.vtp ? `現在: 座標 (${keymap.layout.vtp.x}, ${keymap.layout.vtp.y})` : '現在: VTP なし'}
+          {' '}— 選択中のキーの8方向から選びます（既定は G・H・B・N の交点 = G の右下）
+        </p>
+        <div className="flex items-center gap-3">
+          <div className="grid w-fit grid-cols-3 gap-0.5">
+            {ANCHOR_GRID.map((anchor, i) =>
+              anchor ? (
+                <button
+                  key={anchor}
+                  type="button"
+                  disabled={!key}
+                  title={ANCHOR_LABELS[anchor]}
+                  aria-label={`VTP を選択中のキーの${ANCHOR_LABELS[anchor]}に置く`}
+                  onClick={() => key && onChange(setVtp(keymap, vtpPointOf(key, anchor)))}
+                  className={`h-7 w-7 rounded border text-xs disabled:opacity-40 ${
+                    key && sameAnchor(keymap.layout.vtp, vtpPointOf(key, anchor))
+                      ? 'border-red-500 bg-red-500 text-white'
+                      : 'border-slate-300 bg-white hover:bg-slate-100'
+                  }`}
+                >
+                  ●
+                </button>
+              ) : (
+                <span key={i} className="flex h-7 w-7 items-center justify-center rounded bg-slate-100 text-[10px] text-slate-400">
+                  キー
+                </span>
+              ),
+            )}
+          </div>
+          <button
+            type="button"
+            className={BUTTON}
+            disabled={!keymap.layout.vtp}
+            onClick={() => onChange(setVtp(keymap, undefined))}
+          >
+            VTP を無くす
+          </button>
+        </div>
       </section>
 
       <section className="flex flex-col gap-2">

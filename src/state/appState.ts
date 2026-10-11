@@ -1,5 +1,6 @@
 import { createContext, useContext } from 'react'
 import type { GestureConfig } from '../features/gesture/types'
+import type { PointerConfig } from '../features/pointer/config'
 import type { Keymap } from '../types/keymap'
 
 /** 画面をまたいで共有する状態（ブラウザに保存される） */
@@ -9,6 +10,8 @@ export interface AppState {
   setKeymap: (keymap: Keymap) => void
   gesture: GestureConfig
   setGesture: (gesture: GestureConfig) => void
+  pointer: PointerConfig
+  setPointer: (pointer: PointerConfig) => void
   /** 既定キーマップ（v3.5）に戻す */
   resetKeymap: () => void
   /** インポート: キーマップを差し替え、同梱の設定値があれば反映する */

@@ -1,5 +1,5 @@
 import type { Direction } from '../gesture/types'
-import { KEYMAP_FORMAT, OS_LABELS, type Keymap, type Layer, type OsId } from '../../types/keymap'
+import { KEYMAP_FORMAT, OS_LABELS, type Keymap, type Layer, type OsId, type PointerMode } from '../../types/keymap'
 import { keycodeLabel, lookupKeycode, type Keycode } from './keycodes'
 
 /**
@@ -8,7 +8,8 @@ import { keycodeLabel, lookupKeycode, type Keycode } from './keycodes'
  * - &none / &trans       何もしない / 下位レイヤーへ透過
  * - &os_sel              OS 切替待機モードへ（TrackeyBoard 固有）
  * - &os_set <WIN|MAC|ANDROID|IOS>  OS 切替（OS 切替待機レイヤー用）
- * - &tp_toggle           トラックパッドモード切替（TrackeyBoard 固有・未実装）
+ * - &tp_toggle           トラックパッドモード切替（TrackeyBoard 固有）
+ * - &mkp <LCLK|MCLK|RCLK> マウスボタン（ZMK のマウスキー。トラックパッド/トラックポイントのレイヤー用）
  */
 export type Behavior =
   | { type: 'kp'; keycode: Keycode }
@@ -17,6 +18,15 @@ export type Behavior =
   | { type: 'os_sel' }
   | { type: 'os_set'; os: OsId }
   | { type: 'tp_toggle' }
+  | { type: 'mkp'; button: MouseButton }
+
+export type MouseButton = 'left' | 'middle' | 'right'
+
+const MOUSE_PARAMS: Record<string, MouseButton> = {
+  LCLK: 'left', MB1: 'left', MCLK: 'middle', MB3: 'middle', RCLK: 'right', MB2: 'right',
+}
+
+export const MOUSE_BUTTON_LABELS: Record<MouseButton, string> = { left: '左クリック', middle: '中クリック', right: '右クリック' }
 
 const OS_PARAMS: Record<string, OsId> = { WIN: 'win', MAC: 'mac', ANDROID: 'android', IOS: 'ios' }
 
@@ -41,6 +51,11 @@ export function parseBinding(binding: string): Behavior {
     }
     case '&tp_toggle':
       return { type: 'tp_toggle' }
+    case '&mkp': {
+      const button = MOUSE_PARAMS[params[0]]
+      if (!button) throw new Error(`未知のマウスボタン: ${binding}`)
+      return { type: 'mkp', button }
+    }
   }
   throw new Error(`未知のビヘイビア: ${binding}`)
 }
@@ -55,6 +70,8 @@ export function behaviorLabel(b: Behavior): string | undefined {
       return `(${OS_LABELS[b.os]})`
     case 'tp_toggle':
       return 'Key/Pad'
+    case 'mkp':
+      return MOUSE_BUTTON_LABELS[b.button]
   }
   return undefined
 }
@@ -65,6 +82,11 @@ export function activeLayers(keymap: Keymap, os: OsId, osSelect: boolean): Layer
   return keymap.layers
     .filter((l) => l.activation.type === 'always' || (l.activation.type === 'os' && l.activation.os.includes(os)))
     .reverse()
+}
+
+/** モード用レイヤー（トラックパッド / トラックポイント）。無ければ undefined */
+export function modeLayer(keymap: Keymap, mode: PointerMode): Layer | undefined {
+  return keymap.layers.find((l) => l.activation.type === 'mode' && l.activation.mode === mode)
 }
 
 /** 有効レイヤーを上から探してバインディング文字列を決める */
@@ -96,7 +118,15 @@ export function parseKeymap(data: unknown): Keymap {
       if (typeof v !== 'number' || !Number.isFinite(v)) fail(`settings.gesture.${key} が数値ではありません`)
     }
   }
+  const pointer = km.settings?.pointer
+  if (pointer !== undefined && (typeof pointer !== 'object' || pointer === null)) {
+    fail('settings.pointer がオブジェクトではありません')
+  }
   if (!Array.isArray(km.layout?.keys)) fail('layout.keys がありません')
+  const vtp = km.layout.vtp
+  if (vtp !== undefined && ![vtp?.x, vtp?.y].every((v) => typeof v === 'number' && Number.isFinite(v))) {
+    fail('layout.vtp の x, y が数値ではありません')
+  }
   km.layout.keys.forEach((k, i) => {
     if (![k.x, k.y, k.w, k.h].every((v) => typeof v === 'number' && Number.isFinite(v))) {
       fail(`layout.keys[${i}] の x, y, w, h が数値ではありません`)

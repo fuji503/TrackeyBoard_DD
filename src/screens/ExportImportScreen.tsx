@@ -35,7 +35,8 @@ export default function ExportImportScreen() {
       }
       const km = parseKeymap(data)
       importKeymap(km)
-      const withSettings = km.settings?.gesture ? '（ジェスチャー設定も反映しました）' : '（ジェスチャー設定は含まれていません）'
+      const withSettings =
+        km.settings?.gesture || km.settings?.pointer ? '（設定値も反映しました）' : '（設定値は含まれていません）'
       setMessage({ type: 'ok', text: `「${km.name}」を読み込みました${withSettings}` })
     } catch (err) {
       setMessage({ type: 'error', text: `${file.name}: ${(err as Error).message}` })
@@ -74,14 +75,14 @@ export default function ExportImportScreen() {
       </Row>
 
       <Row
-        hint={`キー配列・キーマップに加え、ジェスチャー設定（ホールド判定 ${gesture.holdDelay}ms / 連続入力間隔 ${gesture.repeatInterval}ms / フリック距離 ${gesture.flickThreshold}キー / グライド幅 ${gesture.glideStep}キー）を含みます`}
+        hint={`キー配列・キーマップに加え、設定コンソールの値（ジェスチャー判定: ホールド判定 ${gesture.holdDelay}ms / 連続入力間隔 ${gesture.repeatInterval}ms / フリック距離 ${gesture.flickThreshold}キー / グライド幅 ${gesture.glideStep}キー、トラックパッド・トラックポイントの設定）を含みます。キーボードサイズは端末ごとの値なので含みません`}
       >
         <button type="button" className={BUTTON} onClick={downloadJson}>
           キーマップ JSON ダウンロード
         </button>
       </Row>
 
-      <Row hint="ジェスチャー設定が含まれていれば設定コンソールにも反映します">
+      <Row hint="設定値が含まれていれば設定コンソールにも反映します">
         <button type="button" className={BUTTON} onClick={() => fileRef.current?.click()}>
           キーマップ JSON アップロード
         </button>

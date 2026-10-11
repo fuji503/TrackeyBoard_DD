@@ -67,7 +67,7 @@ export function updateKey(km: Keymap, keyIndex: number, patch: Partial<PhysicalK
     if (!next.trackpad) delete next.trackpad
     return next
   })
-  return { ...km, layout: { keys } }
+  return { ...km, layout: { ...km.layout, keys } }
 }
 
 /** キーを追加する（全レイヤーに空のバインディングを足す）。追加したキーの番号も返す */
@@ -75,7 +75,7 @@ export function addKey(km: Keymap, rect: PhysicalKey): { keymap: Keymap; index: 
   return {
     keymap: {
       ...km,
-      layout: { keys: [...km.layout.keys, rect] },
+      layout: { ...km.layout, keys: [...km.layout.keys, rect] },
       layers: km.layers.map((l) => ({ ...l, bindings: [...l.bindings, {}] })),
     },
     index: km.layout.keys.length,
@@ -87,7 +87,7 @@ export function removeKeys(km: Keymap, remove: (key: PhysicalKey, index: number)
   const keep = km.layout.keys.map((k, i) => !remove(k, i))
   return {
     ...km,
-    layout: { keys: km.layout.keys.filter((_, i) => keep[i]) },
+    layout: { ...km.layout, keys: km.layout.keys.filter((_, i) => keep[i]) },
     layers: km.layers.map((l) => ({ ...l, bindings: l.bindings.filter((_, i) => keep[i]) })),
   }
 }
@@ -110,7 +110,10 @@ export function removeLastRow(km: Keymap): Keymap {
   if (rows <= 1) return km
   const last = rows - 1
   const trimmed = removeKeys(km, (k) => k.y >= last)
-  return { ...trimmed, layout: { keys: trimmed.layout.keys.map((k) => ({ ...k, h: Math.min(k.h, last - k.y) })) } }
+  return {
+    ...trimmed,
+    layout: { ...trimmed.layout, keys: trimmed.layout.keys.map((k) => ({ ...k, h: Math.min(k.h, last - k.y) })) },
+  }
 }
 
 /** 右端の列を削除する */
@@ -119,14 +122,17 @@ export function removeLastColumn(km: Keymap): Keymap {
   if (cols <= 1) return km
   const last = cols - 1
   const trimmed = removeKeys(km, (k) => k.x >= last)
-  return { ...trimmed, layout: { keys: trimmed.layout.keys.map((k) => ({ ...k, w: Math.min(k.w, last - k.x) })) } }
+  return {
+    ...trimmed,
+    layout: { ...trimmed.layout, keys: trimmed.layout.keys.map((k) => ({ ...k, w: Math.min(k.w, last - k.x) })) },
+  }
 }
 
 function addKeys(km: Keymap, rects: PhysicalKey[]): Keymap {
   return rects.reduce((acc, r) => addKey(acc, r).keymap, km)
 }
 
-/** 行 × 列の空のキーマップを作る（レイヤー構成は元のキーマップを引き継ぐ） */
+/** 行 × 列の空のキーマップを作る（レイヤー構成は元のキーマップを引き継ぐ。VTP は無し） */
 export function createGrid(km: Keymap, rows: number, cols: number): Keymap {
   const keys: PhysicalKey[] = []
   for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) keys.push({ x, y, w: 1, h: 1 })
@@ -161,4 +167,25 @@ export function nextFreeRect(km: Keymap): PhysicalKey {
     }
   }
   return { x: 0, y: rows, w: 1, h: 1 }
+}
+
+/** VTP の位置を設定する。undefined なら VTP なし */
+export function setVtp(km: Keymap, vtp: { x: number; y: number } | undefined): Keymap {
+  const layout = { ...km.layout }
+  if (vtp) layout.vtp = vtp
+  else delete layout.vtp
+  return { ...km, layout }
+}
+
+/** キーの8方向（角・辺の中点）の座標。VTP の位置指定に使う */
+export const VTP_ANCHORS = {
+  up: [0.5, 0], upRight: [1, 0], right: [1, 0.5], downRight: [1, 1],
+  down: [0.5, 1], downLeft: [0, 1], left: [0, 0.5], upLeft: [0, 0],
+} as const
+
+export type VtpAnchor = keyof typeof VTP_ANCHORS
+
+export function vtpPointOf(key: PhysicalKey, anchor: VtpAnchor): { x: number; y: number } {
+  const [ax, ay] = VTP_ANCHORS[anchor]
+  return { x: key.x + key.w * ax, y: key.y + key.h * ay }
 }

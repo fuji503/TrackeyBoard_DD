@@ -9,7 +9,10 @@ export function usePreventTouchDefaults(ref: RefObject<HTMLElement | null>) {
   useEffect(() => {
     const el = ref.current
     if (!el) return
-    const prevent = (e: Event) => e.preventDefault()
+    // キャンセルできないイベント（スクロール開始後など）を止めようとするとブラウザが警告するので確認する
+    const prevent = (e: Event) => {
+      if (e.cancelable) e.preventDefault()
+    }
     const opts = { passive: false } as const
     el.addEventListener('touchmove', prevent, opts)
     el.addEventListener('gesturestart', prevent, opts) // iOS のピンチ

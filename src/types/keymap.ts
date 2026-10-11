@@ -1,4 +1,5 @@
 import type { Direction, GestureConfig } from '../features/gesture/types'
+import type { PointerConfig } from '../features/pointer/config'
 
 /**
  * TrackeyBoard キーマップ（JSON でエクスポート/インポートする形式）。
@@ -22,12 +23,15 @@ export interface Keymap {
 
 export interface KeymapSettings {
   gesture?: Partial<GestureConfig>
+  pointer?: Partial<PointerConfig>
 }
 
 export const KEYMAP_FORMAT = 'trackeyboard-keymap'
 
 export interface PhysicalLayout {
   keys: PhysicalKey[]
+  /** バーチャルトラックポイント (VTP) の中心座標（単位: キーピッチ）。省略時は VTP なし */
+  vtp?: { x: number; y: number }
 }
 
 export interface PhysicalKey {
@@ -54,8 +58,25 @@ export const OS_LABELS: Record<OsId, string> = {
  * - always:    常に有効（ベースレイヤー）
  * - os:        指定 OS が選ばれているとき有効（Apple 系の修飾キー差し替え等）
  * - os_select: OS 切替待機モード中だけ有効（このレイヤーだけで解決し、下には透過しない）
+ * - mode:      トラックパッド / トラックポイントモード中だけ有効。&mkp（マウスボタン）や
+ *              &tp_toggle を置いたキー以外はポインタ操作面になる（下には透過しない）
  */
-export type LayerActivation = { type: 'always' } | { type: 'os'; os: OsId[] } | { type: 'os_select' }
+export type LayerActivation =
+  | { type: 'always' }
+  | { type: 'os'; os: OsId[] }
+  | { type: 'os_select' }
+  | { type: 'mode'; mode: PointerMode }
+
+/** キーボード以外の入力モード */
+export type PointerMode = 'trackpad' | 'trackpoint'
+
+export type InputMode = 'keyboard' | PointerMode
+
+export const MODE_LABELS: Record<InputMode, string> = {
+  keyboard: 'キーボード',
+  trackpad: 'トラックパッド',
+  trackpoint: 'トラックポイント',
+}
 
 export interface Layer {
   name: string

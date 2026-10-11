@@ -20,7 +20,7 @@ src/
   features/gesture/     タップ・ホールド・フリック・グライド判定ロジック
   features/keymap/      キーマップ解析、HID キーコード表、ジェスチャー → HID 変換エンジン
   features/text/        テキスト欄（ホスト OS 側）の編集モデル
-  features/trackpoint/  仮想トラックポイントのロジック
+  features/pointer/     トラックパッド / トラックポイント（VTP）の認識と設定
   hooks/                カスタムフック
   types/                型定義（ZMK 風キーマップなど）
   data/keymaps/         既定のキーマップ JSON（BM 配列 v3.5）
@@ -33,12 +33,14 @@ ZMK の概念（物理レイアウト・レイヤー・`&kp` 等のバインデ�
 型定義は [src/types/keymap.ts](src/types/keymap.ts)、例は [src/data/keymaps/trackeyboard-bm-v35.json](src/data/keymaps/trackeyboard-bm-v35.json)。
 
 - `layout.keys`: 各キーの位置と大きさ（単位: キーピッチ）
+- `layout.vtp`: バーチャルトラックポイントの中心座標（単位: キーピッチ。省略で VTP なし）
 - `layers[].bindings`: キーごとに方向別のバインディング（`center`=タップ, `up`/`down`/`left`/`right`=フリック/グライド）
   - `glide`: グライド入力にする方向、`legend`: 印字の上書き
   - 省略した方向は下位レイヤーへ透過（`&trans`）
-- `layers[].activation`: `always`（ベース）/ `os`（指定 OS で有効）/ `os_select`（OS 切替待機中）
-  - 既定キーマップのレイヤー: `base` → `kana_eisu`（Mac/iOS/Android: 無変換・変換を英数・かなに）→ `apple`（Mac/iOS: Opt/Cmd, Fn🌐）→ `os_select`
-- ビヘイビア: `&kp <keycode>`, `&none`, `&trans`, `&os_sel`, `&os_set <WIN|MAC|ANDROID|IOS>`, `&tp_toggle`
+- `layers[].activation`: `always`（ベース）/ `os`（指定 OS で有効）/ `os_select`（OS 切替待機中）/ `mode`（トラックパッド・トラックポイントモード中）
+  - 既定キーマップのレイヤー: `base` → `kana_eisu`（Mac/iOS/Android: 無変換・変換を英数・かなに）→ `apple`（Mac/iOS: Opt/Cmd, Fn🌐）→ `os_select` → `trackpad` / `trackpoint`（`&mkp` を置いたキーがマウスボタン、それ以外はポインタ操作面）
+- ビヘイビア: `&kp <keycode>`, `&none`, `&trans`, `&os_sel`, `&os_set <WIN|MAC|ANDROID|IOS>`, `&tp_toggle`, `&mkp <LCLK|MCLK|RCLK>`
+- `settings`: 設定コンソールの値（`gesture`, `pointer`）。インポートで復元される
 - キーコード名は ZMK 標準名。JIS 配列ホストで位置が異なる記号は `JP_` 接頭辞（例: `JP_AT`, `JP_DQT`）。修飾関数 `LS(...)` 等も使用可
 
 ホスト OS は JIS 配列を前提とします（日本語ユーザー向けのため US 配列は対象外）。HID コードから JIS 配列での入力文字を求めてテキスト欄に表示します。

@@ -1,5 +1,6 @@
 import { DEFAULT_GESTURE_CONFIG, GESTURE_RANGES, type GestureConfig } from '../features/gesture/types'
 import { BM_KEY_PITCH_MM } from '../features/keyboardSize'
+import ConsoleSection from './ConsoleSection'
 import SliderRow from './SliderRow'
 
 type Unit = 'ms' | 'key'
@@ -23,17 +24,7 @@ interface Props {
 
 export default function GestureSettings({ config, onChange }: Props) {
   return (
-    <div className="flex flex-col gap-1.5">
-      <div className="flex items-center justify-between font-bold text-slate-600">
-        ジェスチャー判定
-        <button
-          type="button"
-          className="rounded px-2 font-normal text-slate-500 hover:bg-slate-200"
-          onClick={() => onChange(DEFAULT_GESTURE_CONFIG)}
-        >
-          既定値に戻す
-        </button>
-      </div>
+    <ConsoleSection title="ジェスチャー判定" defaultOpen onReset={() => onChange(DEFAULT_GESTURE_CONFIG)}>
       {SETTINGS.map((s) => (
         <SliderRow
           key={s.key}
@@ -45,6 +36,6 @@ export default function GestureSettings({ config, onChange }: Props) {
           onChange={(v) => onChange({ ...config, [s.key]: v })}
         />
       ))}
-    </div>
+    </ConsoleSection>
   )
 }

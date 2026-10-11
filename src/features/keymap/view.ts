@@ -71,3 +71,26 @@ export function layoutBounds(keymap: Keymap): { cols: number; rows: number } {
     rows: Math.max(1, ...keys.map((k) => k.y + k.h)),
   }
 }
+
+/** 座標（単位: キーピッチ）にあるキーの番号。無ければ null */
+export function keyAt(keymap: Keymap, x: number, y: number): number | null {
+  const i = keymap.layout.keys.findIndex((k) => x >= k.x && x < k.x + k.w && y >= k.y && y < k.y + k.h)
+  return i === -1 ? null : i
+}
+
+/** 座標に最も近いキー（VTP の下のキーを決める。角ちょうどなら中心が近いキー） */
+export function nearestKey(keymap: Keymap, x: number, y: number): number | null {
+  let best: number | null = null
+  let bestScore = Infinity
+  keymap.layout.keys.forEach((k, i) => {
+    const dx = Math.max(k.x - x, 0, x - (k.x + k.w))
+    const dy = Math.max(k.y - y, 0, y - (k.y + k.h))
+    const centerDist = Math.hypot(k.x + k.w / 2 - x, k.y + k.h / 2 - y)
+    const score = Math.hypot(dx, dy) * 1000 + centerDist
+    if (score < bestScore) {
+      bestScore = score
+      best = i
+    }
+  })
+  return best
+}

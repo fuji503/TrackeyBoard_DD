@@ -48,6 +48,7 @@ export const PALETTE: PaletteGroup[] = [
     modifiable: false,
     bindings: [
       '&none', '&trans', '&os_sel', '&os_set WIN', '&os_set MAC', '&os_set ANDROID', '&os_set IOS', '&tp_toggle',
+      '&mkp LCLK', '&mkp MCLK', '&mkp RCLK',
     ],
   },
 ]
@@ -62,6 +63,9 @@ export const BEHAVIOR_HELP: Record<string, string> = {
   '&os_set ANDROID': 'OS を Android に（OS 切替待機レイヤー用）',
   '&os_set IOS': 'OS を iOS に（OS 切替待機レイヤー用）',
   '&tp_toggle': 'トラックパッドモード切替',
+  '&mkp LCLK': 'マウス左ボタン（トラックパッド / トラックポイントのレイヤー用）',
+  '&mkp MCLK': 'マウス中ボタン（トラックポイントでは押したまま動かすとスクロール）',
+  '&mkp RCLK': 'マウス右ボタン（トラックパッド / トラックポイントのレイヤー用）',
 }
 
 export const MODIFIER_WRAPPERS = [

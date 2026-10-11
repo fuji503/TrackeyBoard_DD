@@ -14,10 +14,12 @@ import {
   setBinding,
   setGlide,
   setLegend,
+  setVtp,
   updateKey,
+  vtpPointOf,
 } from './edit'
 import { PALETTE, wrapModifiers } from './palette'
-import { layoutBounds } from './view'
+import { keyAt, layoutBounds, nearestKey } from './view'
 
 const km = DEFAULT_KEYMAP
 const Q = 1
@@ -77,6 +79,18 @@ describe('配列編集', () => {
     expect(() => parseKeymap(grid)).not.toThrow()
   })
 
+  it('配列を編集しても VTP 位置は保たれる', () => {
+    expect(addRow(km).layout.vtp).toEqual(km.layout.vtp)
+    expect(updateKey(km, 0, { w: 2 }).layout.vtp).toEqual(km.layout.vtp)
+    expect(removeLastColumn(km).layout.vtp).toEqual(km.layout.vtp)
+  })
+
+  it('VTP の位置はキーの8方向から決める', () => {
+    // G (x=5, y=1) の右下 = G/H/B/N の交点
+    expect(vtpPointOf(km.layout.keys[16], 'downRight')).toEqual({ x: 6, y: 2 })
+    expect(setVtp(km, undefined).layout.vtp).toBeUndefined()
+  })
+
   it('重なりの検出', () => {
     expect(findOverlaps(km)).toEqual([])
     expect(findOverlaps(updateKey(km, 0, { w: 1.5 }))).toEqual([[0, 1]])
@@ -88,5 +102,15 @@ describe('palette', () => {
     for (const g of PALETTE) for (const b of g.bindings) expect(() => parseBinding(b)).not.toThrow()
     expect(wrapModifiers('&kp C', ['LC', 'LS'])).toBe('&kp LC(LS(C))')
     expect(wrapModifiers('&none', ['LC'])).toBe('&none')
+  })
+})
+
+describe('keyAt / nearestKey', () => {
+  it('座標のキーと、VTP（角）に最も近いキー', () => {
+    expect(keyAt(km, 5.5, 1.5)).toBe(16) // G
+    expect(keyAt(km, 10.5, 2.5)).toBe(21) // Ent（縦2マス）
+    expect(keyAt(km, 50, 50)).toBeNull()
+    expect(nearestKey(km, 5.9, 1.95)).toBe(16) // 交点の少し左上 → G
+    expect(nearestKey(km, 6.1, 2.05)).toBe(28) // 少し右下 → N
   })
 })

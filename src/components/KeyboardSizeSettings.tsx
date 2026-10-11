@@ -6,6 +6,7 @@ import {
   calibrate,
   type KeyboardSize,
 } from '../features/keyboardSize'
+import ConsoleSection from './ConsoleSection'
 import SliderRow from './SliderRow'
 
 interface Props {
@@ -33,8 +34,7 @@ export default function KeyboardSizeSettings({ size, pitchPx, onChange }: Props)
   }
 
   return (
-    <div className="flex flex-col gap-1.5">
-      <div className="font-bold text-slate-600">キーボードサイズ</div>
+    <ConsoleSection title="キーボードサイズ" defaultOpen>
       <SliderRow
         label="キーピッチ"
         value={Math.round(pitchMm * 10) / 10}
@@ -98,6 +98,6 @@ export default function KeyboardSizeSettings({ size, pitchPx, onChange }: Props)
           </>
         )}
       </p>
-    </div>
+    </ConsoleSection>
   )
 }

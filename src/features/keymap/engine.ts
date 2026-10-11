@@ -1,4 +1,4 @@
-import { OS_LABELS, type Keymap, type OsId } from '../../types/keymap'
+import { MODE_LABELS, OS_LABELS, type InputMode, type Keymap, type OsId } from '../../types/keymap'
 import type { GestureEvent } from '../gesture/types'
 import type { EditAction } from '../text/textBuffer'
 import { activeLayers, parseBinding, resolveBinding } from './binding'
@@ -21,16 +21,18 @@ export interface EngineState {
   os: OsId
   osSelect: boolean
   heldMods: Record<number, number>
+  /** キーボード / トラックパッド / トラックポイント */
+  mode: InputMode
 }
 
-export const INITIAL_ENGINE_STATE: EngineState = { os: 'win', osSelect: false, heldMods: {} }
+export const INITIAL_ENGINE_STATE: EngineState = { os: 'win', osSelect: false, heldMods: {}, mode: 'keyboard' }
 
 /** OS 切替待機モードの自動キャンセルまでの時間 */
 export const OS_SELECT_TIMEOUT_MS = 3000
 
 /** HID 履歴に出す1件 */
 export interface HidLogItem {
-  action: 'tap' | 'glide' | 'hold' | 'release' | 'mode'
+  action: 'tap' | 'glide' | 'hold' | 'release' | 'mode' | 'mouse'
   binding: string
   /** "KC_LSFT+KC_2" 形式 */
   hid?: string
@@ -70,6 +72,17 @@ export function hidToEdit(kc: Keycode, mods: number): EditAction | null {
   if (edit) return edit
   const c = jisChar(kc, mods)
   return c ? { type: 'insert', text: c } : null
+}
+
+/** 入力モードを切り替える */
+export function setMode(state: EngineState, mode: InputMode, binding = ''): EngineResult {
+  if (state.mode === mode) return { state, logs: [], edits: [] }
+  return {
+    // モードが変わったら修飾キーのホールドは解除する（離したイベントが届かないため）
+    state: { ...state, mode, heldMods: {}, osSelect: false },
+    logs: [{ action: 'mode', binding, note: `${MODE_LABELS[mode]}モード` }],
+    edits: [],
+  }
 }
 
 export function cancelOsSelect(state: EngineState): EngineResult {
@@ -128,7 +141,7 @@ export function handleGesture(
       }
     case 'tp_toggle':
       if (!triggers) return none
-      return { state, logs: [{ action: 'mode', binding, note: 'トラックパッドモード切替（未実装）' }], edits: [] }
+      return setMode(state, state.mode === 'trackpad' ? 'keyboard' : 'trackpad', binding)
     case 'kp':
       return handleKeyPress(state, binding, b.keycode, keyIndex, event)
   }
