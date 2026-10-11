@@ -110,7 +110,7 @@ export default function SimulatorScreen() {
           </ul>
         </Panel>
 
-        <Panel title="コンソール">
+        <Panel title="拡大縮小・コンソール">
           <GestureSettings config={config} onChange={setConfig} />
         </Panel>
       </div>
@@ -142,19 +142,29 @@ function ClearButton({ onClick }: { onClick: () => void }) {
   )
 }
 
-const SETTINGS: { key: keyof GestureConfig; label: string; min: number; max: number; step: number; unit: string }[] = [
+/** 実機のキーピッチ (mm)。距離系パラメータを実寸に換算して表示する */
+const KEY_PITCH_MM = 17
+
+type Unit = 'ms' | 'key'
+
+const SETTINGS: { key: keyof GestureConfig; label: string; min: number; max: number; step: number; unit: Unit }[] = [
   { key: 'holdDelay', label: 'ホールド判定', min: 150, max: 1000, step: 10, unit: 'ms' },
   { key: 'repeatInterval', label: '連続入力間隔', min: 30, max: 300, step: 5, unit: 'ms' },
-  { key: 'flickThreshold', label: 'フリック距離', min: 0.1, max: 0.8, step: 0.05, unit: 'キー' },
-  { key: 'glideStep', label: 'グライド間隔', min: 0.1, max: 0.8, step: 0.05, unit: 'キー' },
+  { key: 'flickThreshold', label: 'フリック距離', min: 0.1, max: 0.8, step: 0.05, unit: 'key' },
+  { key: 'glideStep', label: 'グライド幅', min: 0.1, max: 0.8, step: 0.05, unit: 'key' },
 ]
+
+function formatValue(value: number, unit: Unit): string {
+  if (unit === 'ms') return `${value}ms`
+  return `${value.toFixed(2)}キー (${(value * KEY_PITCH_MM).toFixed(1)}mm)`
+}
 
 function GestureSettings({ config, onChange }: { config: GestureConfig; onChange: (c: GestureConfig) => void }) {
   return (
     <div className="flex h-full flex-col justify-center gap-1.5 px-3 text-xs">
       {SETTINGS.map((s) => (
         <label key={s.key} className="flex items-center gap-2">
-          <span className="w-20 shrink-0 text-slate-600">{s.label}</span>
+          <span className="w-20 shrink-0 whitespace-nowrap text-slate-600">{s.label}</span>
           <input
             type="range"
             min={s.min}
@@ -164,10 +174,7 @@ function GestureSettings({ config, onChange }: { config: GestureConfig; onChange
             onChange={(e) => onChange({ ...config, [s.key]: Number(e.target.value) })}
             className="min-w-0 flex-1"
           />
-          <span className="w-16 shrink-0 text-right font-mono">
-            {config[s.key]}
-            {s.unit}
-          </span>
+          <span className="shrink-0 whitespace-nowrap text-right font-mono">{formatValue(config[s.key], s.unit)}</span>
         </label>
       ))}
       <button
