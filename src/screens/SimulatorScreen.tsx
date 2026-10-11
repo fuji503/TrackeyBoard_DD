@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import GestureSettings from '../components/GestureSettings'
 import HistoryLog, { type LogEntry } from '../components/HistoryLog'
 import Keyboard, { KEYBOARD_BORDER_PX } from '../components/Keyboard'
@@ -15,6 +15,7 @@ import {
 } from '../features/keymap/engine'
 import { buildKeyViews, layoutBounds } from '../features/keymap/view'
 import { EMPTY_BUFFER, applyEdit } from '../features/text/textBuffer'
+import { useElementWidth } from '../hooks/useElementWidth'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 import { useAppState } from '../state/appState'
 import { OS_LABELS, type OsId } from '../types/keymap'
@@ -23,21 +24,6 @@ const MAX_LOG = 200
 
 function formatTime(d: Date): string {
   return `${d.toLocaleTimeString('ja-JP', { hour12: false })}.${String(d.getMilliseconds()).padStart(3, '0')}`
-}
-
-/** 要素の幅を追跡する */
-function useElementWidth() {
-  const ref = useRef<HTMLDivElement>(null)
-  const [width, setWidth] = useState(0)
-  useLayoutEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const observer = new ResizeObserver(() => setWidth(el.clientWidth))
-    observer.observe(el)
-    setWidth(el.clientWidth)
-    return () => observer.disconnect()
-  }, [])
-  return [ref, width] as const
 }
 
 export default function SimulatorScreen() {

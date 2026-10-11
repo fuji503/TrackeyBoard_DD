@@ -162,7 +162,8 @@ function handleKeyPress(
   }
 
   const edit = hidToEdit(kc, mods)
-  const char = jisChar(kc, mods)
+  // ショートカット（Ctrl 等が付いている）は文字を入力しない
+  const char = mods & SHORTCUT_MASK ? undefined : jisChar(kc, mods)
   const edits = edit ? [edit] : []
   switch (event.kind) {
     case 'tap':

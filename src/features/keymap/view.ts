@@ -12,6 +12,8 @@ export interface KeyView {
   subLegend?: string
   glide: Direction[]
   trackpad: boolean
+  /** 下位レイヤーから透過している方向（エディタで薄く表示） */
+  inherited?: Partial<Record<Direction, boolean>>
 }
 
 const DIRECTIONS: Direction[] = ['center', ...SLIDE_DIRECTIONS]
@@ -33,6 +35,31 @@ export function buildKeyViews(keymap: Keymap): KeyView[] {
     for (const dir of DIRECTIONS) legends[dir] = slotLegend(kb, dir)
     const subLegend = osLayers.map((l) => slotLegend(l.bindings[index] ?? {}, 'center')).find(Boolean)
     return { index, rect, legends, subLegend, glide: kb.glide ?? [], trackpad: rect.trackpad ?? false }
+  })
+}
+
+/**
+ * エディタ用: 指定レイヤーの印字。そのレイヤーで未設定の方向は、ベースレイヤーの印字を
+ * inherited として返す（OS 切替待機レイヤーは透過しないので返さない）
+ */
+export function buildLayerKeyViews(keymap: Keymap, layerIndex: number): KeyView[] {
+  const views = buildKeyViews(keymap)
+  const layer = keymap.layers[layerIndex]
+  if (!layer || layer.activation.type === 'always') return views
+  const transparent = layer.activation.type === 'os'
+  return views.map((v) => {
+    const kb = layer.bindings[v.index] ?? {}
+    const legends: BindingSlots = {}
+    const inherited: Partial<Record<Direction, boolean>> = {}
+    for (const dir of DIRECTIONS) {
+      const own = kb[dir] !== undefined || kb.legend?.[dir] !== undefined
+      if (own) legends[dir] = slotLegend(kb, dir)
+      else if (transparent && v.legends[dir]) {
+        legends[dir] = v.legends[dir]
+        inherited[dir] = true
+      }
+    }
+    return { ...v, legends, subLegend: undefined, inherited }
   })
 }
 

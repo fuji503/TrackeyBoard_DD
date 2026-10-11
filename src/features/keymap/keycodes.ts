@@ -204,10 +204,34 @@ export function lookupKeycode(name: string): Keycode | undefined {
   return KEYCODES[name.trim()]
 }
 
-/** キートップ表示用ラベル */
+/** 固定ラベルを usage から引く（修飾関数付きのとき用。例: LC(BSPC) → Ctrl+BS） */
+const LABEL_BY_USAGE: Record<number, string> = {}
+for (const kc of Object.values(KEYCODES)) {
+  if (kc.label && kc.page === 'keyboard' && kc.mods === 0) LABEL_BY_USAGE[kc.usage] ??= kc.label
+}
+
+const MOD_LABELS: [number, string][] = [
+  [MOD.LCTRL | MOD.RCTRL, 'Ctrl'],
+  [SHIFT_MASK, 'Shift'],
+  [MOD.LALT | MOD.RALT, 'Alt'],
+  [MOD.LGUI | MOD.RGUI, 'GUI'],
+]
+
+/**
+ * キートップ表示用ラベル。
+ * Shift だけなら記号そのもの（LS(N1) → "!"）、Ctrl/Alt/GUI 付きは "Ctrl+Shift+Z" のように修飾名を並べる
+ */
 export function keycodeLabel(kc: Keycode): string | undefined {
   if (kc.label) return kc.label
-  const c = jisChar(kc, kc.mods)
-  // 英字はキートップ同様に大文字で表示
-  return c && /^[a-z]$/.test(c) ? c.toUpperCase() : c
+  const plain = (mods: number) => {
+    const fixed = kc.page === 'keyboard' ? LABEL_BY_USAGE[kc.usage] : undefined
+    if (fixed) return fixed
+    const c = jisChar(kc, mods)
+    // 英字はキートップ同様に大文字で表示
+    return c && /^[a-z]$/.test(c) ? c.toUpperCase() : c
+  }
+  if (!(kc.mods & SHORTCUT_MASK)) return plain(kc.mods)
+  const key = plain(0)
+  const prefix = MOD_LABELS.filter(([mask]) => kc.mods & mask).map(([, name]) => `${name}+`)
+  return key && `${prefix.join('')}${key}`
 }

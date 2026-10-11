@@ -33,6 +33,14 @@ describe('keycodes', () => {
     expect(keycodeLabel(lookupKeycode('JP_LBRC')!)).toBe('{')
     expect(keycodeLabel(lookupKeycode('BSPC')!)).toBe('BS')
   })
+
+  it('Ctrl/Alt/GUI 付きは修飾名を前に付け、Shift だけなら記号のまま', () => {
+    expect(keycodeLabel(lookupKeycode('LC(C)')!)).toBe('Ctrl+C')
+    expect(keycodeLabel(lookupKeycode('LC(LS(Z))')!)).toBe('Ctrl+Shift+Z')
+    expect(keycodeLabel(lookupKeycode('LS(N1)')!)).toBe('!')
+    expect(keycodeLabel(lookupKeycode('LA(BSPC)')!)).toBe('Alt+BS')
+    expect(keycodeLabel(lookupKeycode('LC(LS(TAB))')!)).toBe('Ctrl+Shift+Tab')
+  })
 })
 
 describe('既定キーマップ (v3.5)', () => {
@@ -98,6 +106,7 @@ describe('engine', () => {
     const s = press(INITIAL_ENGINE_STATE, KEY.CTRL, 'holdStart').state
     const r = press(s, KEY.A, 'tap')
     expect(r.logs[0].hid).toBe('KC_LCTL+KC_A')
+    expect(r.logs[0].char).toBeUndefined()
     expect(r.edits).toEqual([])
   })
 
