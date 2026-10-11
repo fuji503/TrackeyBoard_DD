@@ -39,7 +39,8 @@ export default function KeyboardSizeSettings({ size, pitchPx, onChange }: Props)
         label="キーピッチ"
         value={Math.round(pitchMm * 10) / 10}
         {...PITCH_RANGE_MM}
-        display={`${pitchMm.toFixed(1)}mm (${Math.round(pitchPx)}px)`}
+        unit="mm"
+        note={`(${Math.round(pitchPx)}px)`}
         onChange={(v) => onChange({ ...size, mode: 'manual', pitchMm: v })}
       />
       <div className="flex flex-wrap items-center gap-1.5">

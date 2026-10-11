@@ -3,15 +3,17 @@ import { GestureRecognizer, classify } from './GestureRecognizer'
 import { DEFAULT_GESTURE_CONFIG, type Direction, type GestureEvent } from './types'
 
 // キー幅 100px → flickThreshold 30px, glideStep 30px, stopTolerance 8px
+// （既定値が変わってもテストの座標が崩れないよう距離系は固定する）
 const KEY = 100
-const { holdDelay, repeatInterval } = DEFAULT_GESTURE_CONFIG
+const CONFIG = { ...DEFAULT_GESTURE_CONFIG, flickThreshold: 0.3, glideStep: 0.3, stopTolerance: 0.08 }
+const { holdDelay, repeatInterval } = CONFIG
 
 function setup(glideDirections: Direction[] = []) {
   const events: GestureEvent[] = []
   const r = new GestureRecognizer({
     keySize: KEY,
     glideDirections,
-    config: DEFAULT_GESTURE_CONFIG,
+    config: CONFIG,
     onEvent: (e) => events.push(e),
   })
   const kinds = () => events.map((e) => `${e.kind}:${e.direction}`)

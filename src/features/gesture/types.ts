@@ -50,7 +50,7 @@ export interface GestureConfig {
 
 export const DEFAULT_GESTURE_CONFIG: GestureConfig = {
   flickThreshold: 0.3,
-  glideStep: 0.3,
+  glideStep: 0.5,
   stopTolerance: 0.08,
   holdDelay: 400,
   repeatInterval: 80,

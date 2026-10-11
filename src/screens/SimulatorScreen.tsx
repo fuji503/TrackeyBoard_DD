@@ -89,7 +89,7 @@ export default function SimulatorScreen() {
           <HistoryLog entries={log} />
         </Panel>
 
-        <Panel title="拡大縮小・コンソール">
+        <Panel title="設定コンソール">
           <div className="flex h-full flex-col gap-3 overflow-y-auto p-2 text-xs">
             <KeyboardSizeSettings size={size} pitchPx={pitchPx} onChange={setSize} />
             <hr className="border-slate-200" />
