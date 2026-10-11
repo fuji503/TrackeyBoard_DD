@@ -63,27 +63,3 @@ function moveCaret(text: string, caret: number, to: CaretMove): number {
     }
   }
 }
-
-const LABEL_ACTIONS: Record<string, EditAction> = {
-  BS: { type: 'backspace' },
-  Del: { type: 'delete' },
-  Ent: { type: 'insert', text: '\n' },
-  Space: { type: 'insert', text: ' ' },
-  Tab: { type: 'insert', text: '\t' },
-  '←': { type: 'move', to: 'left' },
-  '→': { type: 'move', to: 'right' },
-  '↑': { type: 'move', to: 'up' },
-  '↓': { type: 'move', to: 'down' },
-  Home: { type: 'move', to: 'home' },
-  End: { type: 'move', to: 'end' },
-}
-
-/**
- * キーラベルをテキスト編集操作に変換する（暫定。フェーズ2で HID コード経由に置き換える）。
- * 1文字のラベルはその文字（英字は小文字）を入力、修飾キー等は null（テキストに影響しない）
- */
-export function labelToEdit(label: string): EditAction | null {
-  if (label in LABEL_ACTIONS) return LABEL_ACTIONS[label]
-  if ([...label].length === 1) return { type: 'insert', text: label.toLowerCase() }
-  return null
-}

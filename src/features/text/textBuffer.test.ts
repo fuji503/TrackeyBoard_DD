@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { applyEdit, labelToEdit, type EditAction, type TextBuffer } from './textBuffer'
+import { applyEdit, type EditAction, type TextBuffer } from './textBuffer'
 
 /** '|' の位置をカーソルとして表記する */
 const buf = (s: string): TextBuffer => ({ text: s.replace('|', ''), caret: s.indexOf('|') })
@@ -36,15 +36,5 @@ describe('applyEdit', () => {
     expect(run('ab|cd\nef', move('down'))).toBe('abcd\nef|')
     expect(run('a|b', move('up'))).toBe('|ab')
     expect(run('a|b', move('down'))).toBe('ab|')
-  })
-})
-
-describe('labelToEdit', () => {
-  it('1文字は小文字で入力、特殊キーは対応操作、修飾キーは null', () => {
-    expect(labelToEdit('Q')).toEqual({ type: 'insert', text: 'q' })
-    expect(labelToEdit('¥')).toEqual({ type: 'insert', text: '¥' })
-    expect(labelToEdit('Space')).toEqual({ type: 'insert', text: ' ' })
-    expect(labelToEdit('←')).toEqual({ type: 'move', to: 'left' })
-    expect(labelToEdit('Shift')).toBeNull()
   })
 })

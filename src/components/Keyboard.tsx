@@ -1,43 +1,42 @@
-import { useRef } from 'react'
-import { LAYOUT_COLS, LAYOUT_ROWS, type KeyDef } from '../data/layoutV35'
+import { useMemo, useRef, type CSSProperties } from 'react'
 import type { GestureConfig, GestureEvent } from '../features/gesture/types'
+import { buildKeyViews, layoutBounds } from '../features/keymap/view'
 import { usePreventTouchDefaults } from '../hooks/usePreventTouchDefaults'
+import type { Keymap } from '../types/keymap'
 import KeyButton from './KeyButton'
 
-const BORDER_PX = 2
+/** 外枠の上・左の線幅（各キーは右・下の線を持つ） */
+export const KEYBOARD_BORDER_PX = 2
 
 interface Props {
-  keys: KeyDef[]
+  keymap: Keymap
   config: GestureConfig
   /** キーピッチ (px) */
   pitchPx: number
-  onGesture: (key: KeyDef, event: GestureEvent) => void
+  onGesture: (keyIndex: number, event: GestureEvent) => void
 }
 
-export default function Keyboard({ keys, config, pitchPx, onGesture }: Props) {
+export default function Keyboard({ keymap, config, pitchPx, onGesture }: Props) {
   const ref = useRef<HTMLDivElement>(null)
   usePreventTouchDefaults(ref)
+  const views = useMemo(() => buildKeyViews(keymap), [keymap])
+  const { cols, rows } = layoutBounds(keymap)
 
   return (
-    // @container: キー内の文字サイズを cqw（キーボード幅基準）で指定するため
     <div
       ref={ref}
-      className="@container shrink-0 touch-none select-none [-webkit-touch-callout:none]"
-      // 左端の枠線 (2px) の分を足す
-      style={{ width: LAYOUT_COLS * pitchPx + BORDER_PX }}
+      className="relative box-content shrink-0 touch-none border-t-2 border-l-2 border-slate-400 select-none [-webkit-touch-callout:none]"
+      style={
+        {
+          '--pitch': `${pitchPx}px`,
+          width: cols * pitchPx,
+          height: rows * pitchPx,
+        } as CSSProperties
+      }
     >
-      <div
-        className="grid border-t-2 border-l-2 border-slate-400"
-        style={{
-          // 各キーは右・下の枠線込みで pitchPx 四方
-          gridTemplateColumns: `repeat(${LAYOUT_COLS}, ${pitchPx}px)`,
-          gridTemplateRows: `repeat(${LAYOUT_ROWS}, ${pitchPx}px)`,
-        }}
-      >
-        {keys.map((key) => (
-          <KeyButton key={key.id} keyDef={key} config={config} onGesture={onGesture} />
-        ))}
-      </div>
+      {views.map((view) => (
+        <KeyButton key={view.index} view={view} config={config} onGesture={onGesture} />
+      ))}
     </div>
   )
 }
