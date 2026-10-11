@@ -8,7 +8,7 @@ import { formatHid, jisChar, keycodeLabel, lookupKeycode } from './keycodes'
 const keymap = parseKeymap(defaultKeymapJson)
 
 /** v3.5 配列のキー番号（行優先） */
-const KEY = { Q: 1, W: 2, A: 12, J: 18, ENT: 21, SHIFT: 22, COMMA: 30, CTRL: 32, WIN: 33, SPACE: 36 }
+const KEY = { Q: 1, W: 2, A: 12, J: 18, ENT: 21, SHIFT: 22, COMMA: 30, CTRL: 32, WIN: 33, MUHENKAN: 35, SPACE: 36, HENKAN: 39 }
 
 const ev = (kind: GestureKind, direction: Direction = 'center'): GestureEvent => ({ kind, direction })
 
@@ -56,6 +56,19 @@ describe('既定キーマップ (v3.5)', () => {
     expect(resolveBinding(mac, KEY.WIN, 'center')).toBe('&kp LALT')
     expect(resolveBinding(mac, KEY.Q, 'center')).toBe('&kp Q')
     expect(resolveBinding(activeLayers(keymap, 'win', false), KEY.WIN, 'center')).toBe('&kp LGUI')
+  })
+
+  it('変換/無変換は Win/Linux のみ。Mac/iOS/Android は英数/かな (LANG2/LANG1)', () => {
+    const at = (os: 'win' | 'mac' | 'ios' | 'android') => {
+      const layers = activeLayers(keymap, os, false)
+      return [resolveBinding(layers, KEY.MUHENKAN, 'center'), resolveBinding(layers, KEY.HENKAN, 'center')]
+    }
+    expect(at('win')).toEqual(['&kp JP_MHEN', '&kp JP_HENK'])
+    for (const os of ['mac', 'ios', 'android'] as const) expect(at(os)).toEqual(['&kp LANG2', '&kp LANG1'])
+  })
+
+  it('Android では修飾キーは Win/Linux と同じ（Opt/Cmd 差し替えは Apple 系のみ）', () => {
+    expect(resolveBinding(activeLayers(keymap, 'android', false), KEY.WIN, 'center')).toBe('&kp LGUI')
   })
 
   it('不正なキーマップはエラー', () => {

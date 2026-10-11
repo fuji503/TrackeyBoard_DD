@@ -36,11 +36,12 @@ ZMK の概念（物理レイアウト・レイヤー・`&kp` 等のバインデ�
 - `layers[].bindings`: キーごとに方向別のバインディング（`center`=タップ, `up`/`down`/`left`/`right`=フリック/グライド）
   - `glide`: グライド入力にする方向、`legend`: 印字の上書き
   - 省略した方向は下位レイヤーへ透過（`&trans`）
-- `layers[].activation`: `always`（ベース）/ `os`（指定 OS で有効。Apple 系の修飾キー差し替え）/ `os_select`（OS 切替待機中）
+- `layers[].activation`: `always`（ベース）/ `os`（指定 OS で有効）/ `os_select`（OS 切替待機中）
+  - 既定キーマップのレイヤー: `base` → `kana_eisu`（Mac/iOS/Android: 無変換・変換を英数・かなに）→ `apple`（Mac/iOS: Opt/Cmd, Fn🌐）→ `os_select`
 - ビヘイビア: `&kp <keycode>`, `&none`, `&trans`, `&os_sel`, `&os_set <WIN|MAC|ANDROID|IOS>`, `&tp_toggle`
 - キーコード名は ZMK 標準名。JIS 配列ホストで位置が異なる記号は `JP_` 接頭辞（例: `JP_AT`, `JP_DQT`）。修飾関数 `LS(...)` 等も使用可
 
-ホスト OS は JIS 配列を前提に、HID コードから入力文字を求めてテキスト欄に表示します。
+ホスト OS は JIS 配列を前提とします（日本語ユーザー向けのため US 配列は対象外）。HID コードから JIS 配列での入力文字を求めてテキスト欄に表示します。
 
 ## デプロイ (GitHub Pages)
 
