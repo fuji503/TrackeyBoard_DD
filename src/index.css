@@ -1,1 +1,18 @@
 @import 'tailwindcss';
+
+/*
+ * ページ全体はスクロールさせず、各画面の main 内だけをスクロールさせる。
+ * overscroll-behavior: none で Pull-to-refresh とバウンススクロールを止める。
+ */
+html,
+body,
+#root {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body {
+  /* ダブルタップズームを無効化（ピンチは各要素側で制御） */
+  touch-action: manipulation;
+}

@@ -1,3 +1,5 @@
+import ComingSoon from '../components/ComingSoon'
+
 export default function KeyboardEditorScreen() {
-  return <div className="p-4">キーボードエディタ</div>
+  return <ComingSoon title="キーボードエディタ" phase="フェーズ3" />
 }
