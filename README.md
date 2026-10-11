@@ -24,3 +24,11 @@ src/
   data/                 デフォルトのキーマップ JSON など
   utils/                汎用ユーティリティ
 ```
+
+## デプロイ (GitHub Pages)
+
+`main` ブランチへ push すると [.github/workflows/deploy.yml](.github/workflows/deploy.yml) が走り、ビルド結果が GitHub Pages に公開されます（Actions タブから手動実行も可）。
+
+初回のみ、リポジトリの **Settings → Pages → Build and deployment → Source** を **GitHub Actions** に設定してください。
+
+公開 URL: https://fuji503.github.io/TrackeyBoard_DD/
