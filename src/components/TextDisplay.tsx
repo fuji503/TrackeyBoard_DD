@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, type RefObject } from 'react'
 import type { MouseButton } from '../features/keymap/binding'
-import type { TextBuffer } from '../features/text/textBuffer'
+import { selectionRange, type TextBuffer } from '../features/text/textBuffer'
 
 export interface Ripple {
   id: number
@@ -24,14 +24,16 @@ const WHITESPACE_MARK: Record<string, string> = { ' ': '□', '\t': '→\t', '\n
 const RIPPLE_COLOR: Record<MouseButton, string> = { left: 'border-blue-500', middle: 'border-emerald-500', right: 'border-rose-500' }
 
 /** 1文字ずつ span にする。data-i は buffer.caret と同じ単位（UTF-16 の位置） */
-function renderChars(text: string, offset: number, showWhitespace: boolean) {
+function renderChars(text: string, offset: number, showWhitespace: boolean, selection: [number, number] | null) {
   let i = offset
   return [...text].map((ch) => {
     const start = i
     i += ch.length
     const mark = showWhitespace ? WHITESPACE_MARK[ch] : undefined
+    const selected = selection !== null && start >= selection[0] && start < selection[1]
+    const className = [mark ? 'text-slate-400' : '', selected ? 'bg-blue-200' : ''].join(' ').trim() || undefined
     return (
-      <span key={start} data-i={start} data-nl={ch === '\n' ? '1' : undefined} className={mark ? 'text-slate-400' : undefined}>
+      <span key={start} data-i={start} data-nl={ch === '\n' ? '1' : undefined} className={className}>
         {mark ?? ch}
       </span>
     )
@@ -49,20 +51,21 @@ export default function TextDisplay({ buffer, showWhitespace, scrollRef, cursor,
     caretRef.current?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
   }, [buffer])
 
+  const selection = selectionRange(buffer)
   const before = buffer.text.slice(0, buffer.caret)
   const after = buffer.text.slice(buffer.caret)
 
   return (
     <div className="relative h-full overflow-hidden">
       <div ref={scrollRef} className="h-full overflow-auto p-2 font-mono text-sm break-all whitespace-pre-wrap">
-        {renderChars(before, 0, showWhitespace)}
+        {renderChars(before, 0, showWhitespace, selection)}
         {/* key を変えて入力のたびに点滅をリセットし、入力直後は必ず表示させる */}
         <span
           key={`${buffer.text.length}-${buffer.caret}`}
           ref={caretRef}
           className="-mx-px inline-block h-[1.2em] animate-[caret-blink_1s_step-end_infinite] border-l-2 border-blue-600 align-text-bottom"
         />
-        {renderChars(after, buffer.caret, showWhitespace)}
+        {renderChars(after, buffer.caret, showWhitespace, selection)}
         {buffer.text === '' && (
           <span className="text-slate-400">キーボードから入力した文字がここに表示されます</span>
         )}

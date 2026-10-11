@@ -116,6 +116,11 @@ describe('engine', () => {
     expect(press(INITIAL_ENGINE_STATE, KEY.A, 'holdEnd').logs[0].action).toBe('release')
   })
 
+  it('Shift ホールド中の矢印グライドは範囲選択', () => {
+    const s = press(INITIAL_ENGINE_STATE, KEY.SHIFT, 'holdStart').state
+    expect(press(s, KEY.COMMA, 'glide', 'left').edits).toEqual([{ type: 'move', to: 'left', select: true }])
+  })
+
   it('グライド: , で矢印、Ent 左で BS', () => {
     expect(press(INITIAL_ENGINE_STATE, KEY.COMMA, 'glide', 'left').edits).toEqual([{ type: 'move', to: 'left' }])
     expect(press(INITIAL_ENGINE_STATE, KEY.ENT, 'glide', 'left').logs[0].hid).toBe('KC_BSPC')

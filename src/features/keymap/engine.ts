@@ -3,6 +3,7 @@ import type { GestureEvent } from '../gesture/types'
 import type { EditAction } from '../text/textBuffer'
 import { activeLayers, parseBinding, resolveBinding } from './binding'
 import {
+  SHIFT_MASK,
   SHORTCUT_MASK,
   formatHid,
   formatMods,
@@ -69,6 +70,8 @@ const HID_EDITS: Record<number, EditAction> = {
 export function hidToEdit(kc: Keycode, mods: number): EditAction | null {
   if (kc.page !== 'keyboard' || mods & SHORTCUT_MASK) return null
   const edit = HID_EDITS[kc.usage]
+  // Shift + 矢印 / Home / End は範囲選択
+  if (edit?.type === 'move' && mods & SHIFT_MASK) return { ...edit, select: true }
   if (edit) return edit
   const c = jisChar(kc, mods)
   return c ? { type: 'insert', text: c } : null

@@ -3,7 +3,6 @@ import { useCallback, useSyncExternalStore } from 'react'
 export const SCREENS = [
   { id: 'simulator', label: 'メイン画面（シミュレータ）' },
   { id: 'editor', label: 'キーボードエディタ' },
-  { id: 'trackpoint', label: 'デジタルトラックポイント' },
   { id: 'io', label: 'エクスポート / インポート' },
 ] as const
 

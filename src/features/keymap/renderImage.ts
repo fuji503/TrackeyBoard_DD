@@ -5,7 +5,7 @@ const FONT = '"Segoe UI", "Hiragino Sans", Meiryo, system-ui, sans-serif'
 const COLOR = { border: '#94a3b8', main: '#334155', flick: '#2563eb', sub: '#dc2626', title: '#0f172a' }
 
 /**
- * キーマップを画面と同じ見た目で PNG に描画する（ベースレイヤーの印字 + OS 別の赤字）
+ * キーマップを画面と同じ見た目で PNG に描画する（ベースレイヤーの印字 + OS 別の赤字 + VTP）
  * @param pitch 1キーの大きさ (px, 等倍時)
  * @param scale 解像度の倍率
  */
@@ -66,6 +66,18 @@ export function renderKeymapPng(keymap: Keymap, pitch = 90, scale = 2): Promise<
     if (left) text(left, x + pitch * 0.05, cy, small, COLOR.flick, 'left')
     if (right) text(right, x + w - pitch * 0.05, cy, small, COLOR.flick, 'right')
     if (v.subLegend) text(`[${v.subLegend}]`, x + w - pitch * 0.05, y + h - pitch * 0.08, pitch * 0.1, COLOR.sub, 'right')
+  }
+
+  // バーチャルトラックポイント（画面と同じ赤い点）
+  const vtp = keymap.layout.vtp
+  if (vtp) {
+    ctx.beginPath()
+    ctx.arc(ox + vtp.x * pitch, oy + vtp.y * pitch, pitch * 0.08, 0, Math.PI * 2)
+    ctx.fillStyle = '#ef4444'
+    ctx.fill()
+    ctx.lineWidth = 2
+    ctx.strokeStyle = '#ffffff'
+    ctx.stroke()
   }
 
   return new Promise((resolve, reject) =>

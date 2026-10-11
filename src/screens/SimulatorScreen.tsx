@@ -55,6 +55,8 @@ export default function SimulatorScreen() {
   const [cursor, setCursor] = useState(INITIAL_CURSOR)
   const [ripples, setRipples] = useState<Ripple[]>([])
   const mouseLog = useRef(new MouseLogAggregator())
+  /** 左ボタンを押している間はドラッグで範囲選択する */
+  const leftHeld = useRef(false)
 
   const views = useMemo(() => buildKeyViews(keymap), [keymap])
   const pitchPx = resolvePitchPx(size, keyboardAreaWidth - KEYBOARD_BORDER_PX, layoutBounds(keymap).cols)
@@ -94,18 +96,28 @@ export default function SimulatorScreen() {
     [apply, appendLogs],
   )
 
-  /** 仮想カーソル位置で左クリックしたとき、文字カーソルをその位置へ移す */
-  const clickAtCursor = useCallback((button: Ripple['button']) => {
+  /** 仮想カーソル位置に文字カーソルを置く（select ならドラッグで範囲選択） */
+  const placeCaretAtCursor = useCallback((select: boolean) => {
     const el = textRef.current
     if (!el) return
     const { x, y } = cursorRef.current
-    const id = nextId.current++
-    setRipples((r) => [...r, { id, x, y, button }])
-    setTimeout(() => setRipples((r) => r.filter((p) => p.id !== id)), RIPPLE_MS)
-    if (button !== 'left') return
     const rect = el.getBoundingClientRect()
-    setBuffer((b) => ({ ...b, caret: caretOffsetAt(el, rect.left + x, rect.top + y, b.text.length) }))
+    setBuffer((b) =>
+      applyEdit(b, { type: 'setCaret', pos: caretOffsetAt(el, rect.left + x, rect.top + y, b.text.length), select }),
+    )
   }, [])
+
+  /** クリックの目印を出し、左クリックなら文字カーソルをその位置へ移す */
+  const clickAtCursor = useCallback(
+    (button: Ripple['button']) => {
+      const { x, y } = cursorRef.current
+      const id = nextId.current++
+      setRipples((r) => [...r, { id, x, y, button }])
+      setTimeout(() => setRipples((r) => r.filter((p) => p.id !== id)), RIPPLE_MS)
+      if (button === 'left') placeCaretAtCursor(false)
+    },
+    [placeCaretAtCursor],
+  )
 
   const handlePointer = useCallback(
     (out: PointerOutput) => {
@@ -121,6 +133,7 @@ export default function SimulatorScreen() {
             y: Math.min(Math.max(0, c.y + out.dy), Math.max(0, h - 1)),
           }
           setCursor(cursorRef.current)
+          if (leftHeld.current) placeCaretAtCursor(true)
           break
         }
         case 'scroll':
@@ -130,20 +143,23 @@ export default function SimulatorScreen() {
           }
           break
         case 'button':
+          if (out.button === 'left') leftHeld.current = out.pressed
           if (out.pressed) clickAtCursor(out.button)
           break
         case 'click':
           clickAtCursor(out.button)
           break
         case 'exitTrackpad':
+          leftHeld.current = false
           changeMode('keyboard')
           break
         case 'trackpoint':
+          leftHeld.current = false
           changeMode(out.active ? 'trackpoint' : 'keyboard')
           break
       }
     },
-    [appendLogs, changeMode, clickAtCursor],
+    [appendLogs, changeMode, clickAtCursor, placeCaretAtCursor],
   )
 
   const handleGesture = useCallback(
@@ -163,6 +179,10 @@ export default function SimulatorScreen() {
   return (
     <div className="flex min-h-full flex-col gap-4 p-4">
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+        <Panel title="HIDキーコード履歴" action={<ClearButton onClick={() => setLog([])} />}>
+          <HistoryLog entries={log} />
+        </Panel>
+
         <Panel
           title="キー入力テキスト欄"
           action={
@@ -186,10 +206,6 @@ export default function SimulatorScreen() {
             cursor={engine.mode === 'keyboard' ? null : cursor}
             ripples={ripples}
           />
-        </Panel>
-
-        <Panel title="HIDキーコード履歴" action={<ClearButton onClick={() => setLog([])} />}>
-          <HistoryLog entries={log} />
         </Panel>
 
         <Panel title="設定コンソール">

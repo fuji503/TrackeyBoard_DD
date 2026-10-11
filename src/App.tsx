@@ -4,13 +4,11 @@ import { useHashScreen, type ScreenId } from './hooks/useHashScreen'
 import ExportImportScreen from './screens/ExportImportScreen'
 import KeyboardEditorScreen from './screens/KeyboardEditorScreen'
 import SimulatorScreen from './screens/SimulatorScreen'
-import TrackpointScreen from './screens/TrackpointScreen'
 import AppStateProvider from './state/AppStateProvider'
 
 const SCREEN_COMPONENTS: Record<ScreenId, ComponentType> = {
   simulator: SimulatorScreen,
   editor: KeyboardEditorScreen,
-  trackpoint: TrackpointScreen,
   io: ExportImportScreen,
 }
 
