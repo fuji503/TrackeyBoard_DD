@@ -16,13 +16,13 @@ export default function ExportImportScreen() {
   const [message, setMessage] = useState<Message>(null)
   const fileName = keymapFileName(keymap.name)
 
-  const downloadJson = () => {
+  const exportJson = () => {
     const blob = new Blob([serializeKeymap(exportKeymap())], { type: 'application/json' })
     downloadBlob(blob, fileName)
-    setMessage({ type: 'ok', text: `${fileName} をダウンロードしました` })
+    setMessage({ type: 'ok', text: `${fileName} をエクスポートしました` })
   }
 
-  const upload = async (e: ChangeEvent<HTMLInputElement>) => {
+  const importJson = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     e.target.value = '' // 同じファイルを続けて選んでも反応するように
     if (!file) return
@@ -61,7 +61,7 @@ export default function ExportImportScreen() {
 
   return (
     <div className="mx-auto flex w-full max-w-xl flex-col gap-4 p-6">
-      <Row hint={`ダウンロードするファイル名: ${fileName}`}>
+      <Row hint={`エクスポートするファイル名: ${fileName}`}>
         <label className="flex items-center gap-3">
           <span className="shrink-0 text-sm font-bold text-slate-600">キーマップ名</span>
           <input
@@ -77,16 +77,16 @@ export default function ExportImportScreen() {
       <Row
         hint={`キー配列・キーマップに加え、設定コンソールの値（ジェスチャー判定: ホールド判定 ${gesture.holdDelay}ms / 連続入力間隔 ${gesture.repeatInterval}ms / フリック距離 ${gesture.flickThreshold}キー / グライド幅 ${gesture.glideStep}キー、トラックパッド・トラックポイントの設定）を含みます。キーボードサイズは端末ごとの値なので含みません`}
       >
-        <button type="button" className={BUTTON} onClick={downloadJson}>
-          キーマップ JSON ダウンロード
+        <button type="button" className={BUTTON} onClick={exportJson}>
+          キーマップ JSON エクスポート
         </button>
       </Row>
 
       <Row hint="設定値が含まれていれば設定コンソールにも反映します">
         <button type="button" className={BUTTON} onClick={() => fileRef.current?.click()}>
-          キーマップ JSON アップロード
+          キーマップ JSON インポート
         </button>
-        <input ref={fileRef} type="file" accept=".json,application/json" className="hidden" onChange={upload} />
+        <input ref={fileRef} type="file" accept=".json,application/json" className="hidden" onChange={importJson} />
       </Row>
 
       <Row>

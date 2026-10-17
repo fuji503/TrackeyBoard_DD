@@ -5,6 +5,7 @@ export const SCREENS = [
   { id: 'editor', label: 'キーボードエディタ' },
   { id: 'io', label: 'エクスポート / インポート' },
   { id: 'help', label: '使い方' },
+  { id: 'changelog', label: '改版履歴' },
 ] as const
 
 export type ScreenId = (typeof SCREENS)[number]['id']

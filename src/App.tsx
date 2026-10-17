@@ -1,6 +1,7 @@
 import type { ComponentType } from 'react'
 import AppHeader from './components/AppHeader'
 import { useHashScreen, type ScreenId } from './hooks/useHashScreen'
+import ChangelogScreen from './screens/ChangelogScreen'
 import ExportImportScreen from './screens/ExportImportScreen'
 import HelpScreen from './screens/HelpScreen'
 import KeyboardEditorScreen from './screens/KeyboardEditorScreen'
@@ -13,6 +14,7 @@ const SCREEN_COMPONENTS: Record<ScreenId, ComponentType<{ onNavigate: (id: Scree
   editor: KeyboardEditorScreen,
   io: ExportImportScreen,
   help: HelpScreen,
+  changelog: ChangelogScreen,
 }
 
 export default function App() {
